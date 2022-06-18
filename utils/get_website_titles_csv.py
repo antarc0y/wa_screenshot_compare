@@ -107,7 +107,14 @@ def similarity_calculation(archive_title, current_title, threshold, cur_note):
         else:
             # if similarity selected is invalid
             print("Invalid similarity calculation type")
-        
+	    print(e)
+	    logging.info("Error Message: Getting Similarity error")
+            logging.info("current url: #{0}\n; archive url{1}".format(cur_url, archive_url))
+            logging.info(e)
+            similarity = "_NAN_"
+            content_flag = "_NAN_"
+	    cur_note = "No Similarity Calculated"
+	
         if(similarity > threshold):
             content_flag = "On-topic"
         else:
