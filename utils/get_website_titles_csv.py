@@ -67,9 +67,8 @@ def get_cosine_similarity(archive_title,current_title):
     return(cosine)
 
 
-def similarity_calculation(archive_title, current_title, threshold, cur_note):
+def similarity_calculation(archive_title, current_title, threshold, cur_note, calculation_type):
     try:
-	 # if user choose jaccard of levenstein similarity
   
         # read specific columns of csv file using Pandas
         df = pd.read_csv("wca_title_drift.csv", usecols = ['current_title','archive_title'])
@@ -87,33 +86,38 @@ def similarity_calculation(archive_title, current_title, threshold, cur_note):
   
         # Print the list
         #print(row_list)
+	
+	# read calculation_type
+	calc = list(calculation_type)
 
         for item in row_list:
             sentences = item
             sentences = [sent.lower().split(" ") for sent in sentences]
             #print(sentences)
-            if calculation_type == 'l':
+            if ('l' in calc):
                 similarity = lev_distance(sentences[0], sentences[1])
                 print(lev_distance(sentences[0], sentences[1]))
                 #print(sentences)
-            if calculation_type == 'j':
+            elif ('j' in calc):
                 similarity = jaccard_similarity(sentences[0], sentences[1])
                 print(jaccard_similarity(sentences[0], sentences[1]))
-
-        if calculation_type == 'c':
+	
+        if ('c' in calc):
             # if user choose cosine similarity
             similarity = get_cosine_similarity(archive_title, current_title)
 
         else:
-            # if similarity selected is invalid
-            print("Invalid similarity calculation type")
-	    print(e)
-	    logging.info("Error Message: Getting Similarity error")
-            logging.info("current url: #{0}\n; archive url{1}".format(cur_url, archive_url))
-            logging.info(e)
-            similarity = "_NAN_"
-            content_flag = "_NAN_"
-	    cur_note = "No Similarity Calculated"
+	    # if user did not select c, and didn't previously select j or l
+	    if (not 'j' in calc) and (not 'l' in calc):
+            	# if similarity selected is invalid
+            	print("Invalid similarity calculation type")
+	    	print(e)
+	    	logging.info("Error Message: Getting Similarity error")
+            	logging.info("current url: #{0}\n; archive url{1}".format(cur_url, archive_url))
+            	logging.info(e)
+            	similarity = "_NAN_"
+            	content_flag = "_NAN_"
+	    	cur_note = "No Similarity Calculated"
 	
         if(similarity > threshold):
             content_flag = "On-topic"
