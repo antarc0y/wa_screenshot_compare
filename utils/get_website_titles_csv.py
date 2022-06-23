@@ -9,7 +9,19 @@ from requests_html import HTMLSession
 from selenium import webdriver
 from selenium.webdriver import FirefoxOptions
 from selenium.webdriver.support.ui import WebDriverWait
+from Levenstein import distance as lev
 import time
+
+def jaccard_similarity(x,y):
+  """ returns the jaccard similarity between two lists """
+  #print(x,y)
+  intersection_cardinality = len(set.intersection(*[set(x), set(y)]))
+  union_cardinality = len(set.union(*[set(x), set(y)]))
+  return intersection_cardinality/float(union_cardinality)
+  
+
+def lev_distance(x,y):
+    return lev(x,y)
 
 def get_cosine_similarity(archive_title,current_title):
 
@@ -52,9 +64,52 @@ def get_cosine_similarity(archive_title,current_title):
     return(cosine)
 
 
-def similarity_calculation(archive_title, current_title, threshold, cur_note):
+def similarity_calculation(archive_title, current_title, threshold, cur_note, calculation_type):
     try:
-        similarity = get_cosine_similarity(archive_title, current_title)
+	# read calculation_type
+	calc = list(calculation_type)
+	# if user choose jaccard of levenstein similarity
+        # importing the module
+        import pandas as pd
+  
+        # read specific columns of csv file using Pandas
+        df = pd.read_csv("wca_title_drift.csv", usecols = ['current_title','archive_title'])
+        #print(df)
+
+        row_list =[]
+
+        # Iterate over each row
+        for index, rows in df.iterrows():
+        # Create list for the current row
+            my_list =[str(rows.current_title), str(rows.archive_title)]
+      
+        # append the list to the final list
+        row_list.append(my_list)
+  
+        # Print the list
+        #print(row_list)
+
+        for item in row_list:
+            sentences = item
+            sentences = [sent.lower().split(" ") for sent in sentences]
+            #print(sentences)
+            if ("l" in calc):
+                similarity = lev_distance(sentences[0], sentences[1])
+                print(lev_distance(sentences[0], sentences[1]))
+                #print(sentences)
+            if ("j" in calc):
+                similarity = jaccard_similarity(sentences[0], sentences[1])
+                print(jaccard_similarity(sentences[0], sentences[1]))
+
+        if ("c" in calc):
+            # if user choose cosine similarity
+            similarity = get_cosine_similarity(archive_title, current_title)
+
+        else:
+            # if similarity selected is invalid
+            print("Invalid similarity calculation type")
+		
+        
         if(similarity > threshold):
             content_flag = "On-topic"
         else:
@@ -152,7 +207,7 @@ def content_drift_check(csv_in, csv_out, threshold):
                     similarity = "_NAN_"
                     content_flag = "_NAN_"
                 else:
-                    similarity, content_flag, cur_note = similarity_calculation(archive_title, current_title, threshold, cur_note)
+                    similarity, content_flag, cur_note = similarity_calculation(archive_title, current_title, threshold, cur_note, calculation_type)
                 
                 csv_writer.writerow([cur_url, archive_url, current_title, archive_title, similarity, content_flag, cur_note])
                 
@@ -196,6 +251,7 @@ def	parse_args():
 	parser.add_argument("--csv_out", type=str,	help="The file name	to write the content drift result")
 	parser.add_argument("--log_out", type=str,	help="The file name	to write the log files")
 	parser.add_argument("--threshold", type=float, help="The threshold value for the similiarity comparison (range: [0, 1])")
+	parser.add_argument("--calculation_type", type=str, help="The type of similarity calculation you want")
 
 	args =	parser.parse_args()
 
@@ -211,11 +267,11 @@ def	parse_args():
 	if	args.threshold is None:
 		args.threshold = 0.6
 
-	return	args.csv_in, args.csv_out, args.log_out, args.threshold
+	return	args.csv_in, args.csv_out, args.log_out, args.threshold, args.calculation_type
 
 
 def	main():
-	csv_in, csv_out, log_out, threshold= parse_args()
+	csv_in, csv_out, log_out, threshold, calculation_type= parse_args()
 
 	print("Reading	the	input files	...")
 	set_up_logging(log_out);
